@@ -1,0 +1,53 @@
+name: Publish Internal Draft to Google Play
+
+on:
+  workflow_dispatch:
+
+jobs:
+  publish:
+    name: Build and upload draft AAB
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+
+      - name: Decode upload keystore
+        run: |
+          printf "%s" "${{ secrets.UPLOAD_KEYSTORE_BASE64 }}" | base64 --decode > upload-keystore.jks
+
+      - name: Build signed release AAB
+        env:
+          UPLOAD_KEYSTORE_FILE: ${{ github.workspace }}/upload-keystore.jks
+          UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.UPLOAD_KEYSTORE_PASSWORD }}
+          UPLOAD_KEY_ALIAS: ${{ secrets.UPLOAD_KEY_ALIAS }}
+          UPLOAD_KEY_PASSWORD: ${{ secrets.UPLOAD_KEY_PASSWORD }}
+        run: gradle clean :app:bundleRelease --no-daemon --stacktrace
+
+      - name: Upload to Google Play internal track as draft
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.ltmfedory.roaminghelper
+          releaseFiles: app/build/outputs/bundle/release/*.aab
+          track: internal
+          status: draft
