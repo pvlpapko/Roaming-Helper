@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Помощник роуминга</string>
+    <string name="widget_description">Виджет быстрых действий для роуминга: режим 4G/3G, SMS и выбор оператора.</string>
 </resources>
