@@ -1,0 +1,48 @@
+plugins {
+    id 'com.android.application'
+}
+
+def hasReleaseSigning = System.getenv('UPLOAD_KEYSTORE_PASSWORD') != null &&
+        System.getenv('UPLOAD_KEY_ALIAS') != null &&
+        System.getenv('UPLOAD_KEY_PASSWORD') != null
+
+def releaseKeystorePath = System.getenv('UPLOAD_KEYSTORE_FILE') ?: "${rootDir}/upload-keystore.jks"
+
+android {
+    namespace 'com.ltmfedory.roaminghelper'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.ltmfedory.roaminghelper'
+        minSdk 23
+        targetSdk 35
+        versionCode 1
+        versionName '1.0.0'
+    }
+
+    signingConfigs {
+        release {
+            if (hasReleaseSigning && file(releaseKeystorePath).exists()) {
+                storeFile file(releaseKeystorePath)
+                storePassword System.getenv('UPLOAD_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('UPLOAD_KEY_ALIAS')
+                keyPassword System.getenv('UPLOAD_KEY_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        debug {
+            applicationIdSuffix '.debug'
+            versionNameSuffix '-debug'
+        }
+        release {
+            minifyEnabled false
+            shrinkResources false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            if (hasReleaseSigning && file(releaseKeystorePath).exists()) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+}
